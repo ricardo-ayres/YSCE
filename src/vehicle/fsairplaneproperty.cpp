@@ -2280,6 +2280,7 @@ double FsAirplaneProperty::GetLift(const double &aoa,const double &vel) const
 	{
 		double cl,lift;
 
+		
 		if(chMinAOA<=aoa && aoa<=chMaxAOA)
 		{
 			cl=(chClZero+aoa*chClSlope)*(1.0+chClFlap*staFlap);
@@ -2287,6 +2288,9 @@ double FsAirplaneProperty::GetLift(const double &aoa,const double &vel) const
 		else if(chMaxAOA<=aoa && aoa<chMaxAOA+chFlatClRange1)
 		{
 			cl=(chClZero+chMaxAOA*chClSlope)*(1.0+chClFlap*staFlap);
+
+			/* testing new post-stall cl */
+			//cl=(chClZero+chMaxAOA*chClSlope)*sin(2*aoa);
 		}
 		else if(chMinAOA-chFlatClRange2<aoa && aoa<=chMinAOA)
 		{
@@ -2311,8 +2315,33 @@ double FsAirplaneProperty::GetLift(const double &aoa,const double &vel) const
 		if(chHasVGW==YSTRUE)
 		{
 			cl=cl*(1.0+chClVgw*staVgw);
+			
 		}
+
+		/* trig lift model */
+		/*
+		double lim = atan(1)*0.36363636363636;
+
+		if (aoa <= lim) {
+			cl = sin(9*aoa);
+		} else {
+			cl = sin(2*aoa);
+		}
+		*/
+		
 		lift=0.5*cl*staRho*vel*vel*chWingArea;
+
+		/* Inspecting */
+		printf("chMinAOA: %f\n", chMinAOA);
+		printf("chMaxAOA: %f\n", chMaxAOA);
+		printf("chFlatClRange1: %f\n", chFlatClRange1);
+		printf("chClDecay1: %f\n", chClDecay1);
+		printf("chFlatClRange2: %f\n", chFlatClRange2);
+		printf("chClDecay2: %f\n", chClDecay2);
+		printf("aoa: %f\n", aoa);
+		printf("cl: %f\n", cl);
+		printf("lift: %f\n", lift);
+		printf("chNewFDM: %d\n", chNewFDM);
 
 		return lift;
 	}
@@ -8142,6 +8171,12 @@ const char *const FsAirplaneProperty::keyWordSource[]=
 	// 2018/10/07
 	"INITZOOM",  // Initial zoom factor
 
+	/* Activate new flight model for airplanes */
+	/* The purpose of this keyword is to keep backwards compatibility with
+	 * older versions of ysflight but allow for a better fdm if the aircraft
+	 * selects it. */
+	"NEWFDM",
+
 	NULL
 };
 
@@ -8204,6 +8239,9 @@ YSRESULT FsAirplaneProperty::SendCommand(const char in[])
 		YSRESULT res;
 		YSBOOL boo;
 		double dou;
+
+		/* ensure that the new FDM is not selected by default */
+		chNewFDM=YSFALSE;
 
 		if(keyWordList.GetN()==0)
 		{
@@ -9534,6 +9572,11 @@ YSRESULT FsAirplaneProperty::SendCommand(const char in[])
 					chDefZoom=atof(av[1]);  // 2018/11/24 Close shave!  I was writing [i] here.
 					res=YSOK;
 				}
+				break;
+
+			case 189: /* "NEWFDM" activated, don't use old lift/drag */
+				chNewFDM = YSTRUE;
+				res = YSOK;
 				break;
 			}
 			if(res!=YSOK)

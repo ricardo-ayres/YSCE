@@ -173,3 +173,5 @@ aircraft/v107.dat aircraft/v107.dnm aircraft/v107coll.srf aircraft/v107cockpit.s
 aircraft/viggen.dat aircraft/viggen.dnm aircraft/viggencoll.srf aircraft/viggencockpit.srf
 
 aircraft/ys11.dat aircraft/ys11.dnm aircraft/ys11coll.srf aircraft/ys11cockpit.srf
+
+aircraft/f18-newfdm.dat aircraft/f18.dnm aircraft/f18coll.srf aircraft/f18cockpit.srf aircraft/f18_coarse.dnm

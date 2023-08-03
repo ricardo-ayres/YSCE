@@ -302,6 +302,7 @@ protected:
 	double chClSlope;        //Cl increase/AOA(degree)
 	double chMaxAOA;         //Critical AOA (Plus)
 	double chMinAOA;         //Critical AOA (Minus)
+	YSBOOL chNewFDM;		 //Select new flight model
 
 	double chMaxCdAOA;       // AOA that gives the maximum Cd
 	double chFlatClRange1;   // See NewClCdApproximation.docx
