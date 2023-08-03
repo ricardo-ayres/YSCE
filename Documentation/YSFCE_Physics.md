@@ -224,20 +224,21 @@ $$g = 9.807$$
 
 # Lift & Drag Coefficient Calculation
 
-The Lift and Drag Coefficient calculations are performed when the DAT File goes through the auto-calculate process.
+The relevant constants for calculating the Lift and Drag Coefficients at different angles of attack are calculated when the DAT File goes through the auto-calculate (AutoCalculate() method) process. The specific lift coefficient and drag coefficient for each angle of attack for each aircraft are performed with those constants in the GetLift() and GetDrag() methods at each simulation update.
 
 ## Lift Coeficient Calculation
 $$C_{L_0} = \frac{g \times \left(WEIGHCLN + WEIGFUEL\right)}{0.5 \times \rho_{REFACRUS} \times REFVCRUS^2 \times WINGAREA}$$
 
 <br>
 
-$$C_{L_{Land}} = \left(\frac{ g  \times  \left(WEIGHCLN + WEIGFUEL \right)}{0.5 \times  \rho_{Sea} \times V^2 \times WINGAREA} \right)   \left(\frac{1}{ 1.0 + CLBYFLAP }\right)   \left(\frac{1}{ 1.0 + CLVARGEO }\right)$$
+$$C_{L_{Land}} = \left(\frac{ g  \times  \left(WEIGHCLN + WEIGFUEL \right)}{0.5 \times  \rho_{Sea} \times REFVLAND^2 \times WINGAREA} \right)   \left(\frac{1}{ 1.0 + CLBYFLAP }\right)   \left(\frac{1}{ 1.0 + CLVARGEO }\right)$$
 
 <br>
 
 $$C_{L_{Slope}} = \frac{C_{L_{Land}} - C_{L_0}}{REFAOALD}$$
 
 where:
+
 - $\rho_{REFACRUS}$ = Air Density at cruise altitude
 - $g$ = Gravitational Acceleration
 - $\rho_{Sea}$ = Air density at sea level
@@ -254,14 +255,35 @@ Note: For helicopters, $C_{L_0}$ and $C_{L_{Slope}}$ are zero.
 
 ### Lift Coefficient Regions
 
-There are several regions to the Lift Coefficient curve which are defined by the DAT File.
-- Negative AoA Decay
-- Negative AoA Flat
-- Between CRITAOAM and CRITAOAP
-- Positive AoA Flay
-- Positive AoA Decay
+There are several regions to the Lift Coefficient curve, delimited by angle of attack ranges which are defined by variables in the DAT File:
 
-When $\alpha$ is in the Negative AoA Decay region:
+![Lift regions](CL_CD_Curves.jpg)
+
+- Negative AoA Decay range (negative stall range) (CLDECAY2)
+- Negative AoA Flat range (FLATCLR2)
+- Normal flight envelope, with AoA above the minimum critical AoA and below the positive critical AoA (CRITAOAM and CRITAOAP)
+- Positive AoA Flat region (FLATCLR1)
+- Positive AoA Decay (positive stall range) (CLDECAY1)
+
+In YSFlight's default content, only the [F-22](../runtime/aircraft/f22.dat) specifies FLATCLR1, FLATCLR2, CLDECAY1, and CLDECAY2. For all of the other aircraft these variables are ommitted and the AutoCalculate() method sets all of them to zero, causing the $C_L$ calculation to default to the catchall 'else' in the code for the 'GetLift()' method which simply sets $C_L = 0.0$ for all AoAs above CRITAOAP or below CRITAOM.
+
+For all default aircraft except for the F-22:
+
+When $\alpha$ is between CRITAOAM and CRITAOAP (normal flight envelope):  
+($CRITAOAM \le \alpha \le CRITAOAP$)
+
+$$C_L = \left(C_{L_{0}} + \alpha \times C_{L_{slope}}  \right) \times \left( 1 + staFlap \times CLBYFLAP   \right)$$
+
+When $\alpha$ is either below CRITAOAM or above CRITAOAP (stall region):  
+($\alpha < CRITAOAM$ or $\alpha > CRITAOAP$)
+$$C_L = 0.0$$
+
+<br>
+
+For the F-22, or for any other add-on aircraft specifying these variables:
+
+When $\alpha$ is in the Negative AoA Decay region:  
+($\alpha < CRITAOAM-FLATCLR2-CLDECAY2$)
 
 $$\tau = 1.0 - \left(\frac{\left(CRITAOAM - FLATCLR2\right) - \alpha}{CLDECAY2}\right)$$
 
@@ -275,26 +297,30 @@ $$C_L = C_{L_{min}} \times \tau$$
 
 <br>
 
-When $\alpha$ is in the Negative AoA Flat region:
+When $\alpha$ is in the Negative AoA Flat region:  
+($\alpha < CRITAOAM-FLATCLR2$)
 
 $$C_L = \left( C_{L_{0}} + CRITAOAM \times C_{L_{slope}} \right) \times \left(1.0 + CLBYFLAP \times staFlap \right)$$
 
 <br>
 
-When $\alpha$ is between CRITAOAM and CRITAOAP:
+When $\alpha$ is between CRITAOAM and CRITAOAP:  
+($CRITAOAM \le \alpha \le CRITAOAP$)
 
 $$C_L = \left(C_{L_{0}} + \alpha \times C_{L_{slope}}  \right) \times \left( 1 + staFlap \times CLBYFLAP   \right)$$
 
 <br>
 
-When $\alpha$ is in the Positive AoA Flat region:
+When $\alpha$ is in the Positive AoA Flat region:  
+($\alpha > CRITAOAP+FLATCLR1$)
 
 $$C_L = \left(C_{L_{0}}  + CRITAOAP \times C_{L_{slope}} \right) \times \left(1.0 + CLBYFLAP \times staFlap \right)$$
 
 <br>
 
 
-When $\alpha$ is in the Positive AoA Decay region:
+When $\alpha$ is in the Positive AoA Decay region:  
+($\alpha > CRITAOAP-FLATCLR1-CLDECAY1$)
 
 $$\tau = 1.0 - \left(\frac{\alpha - \left(CRITAOAP + FLATCLR1 \right)}{CLDECAY1}\right)$$
 
